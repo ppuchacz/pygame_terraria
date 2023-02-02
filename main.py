@@ -1,5 +1,6 @@
 from typing import Tuple
 from collisions import get_board_element_pointed_by
+from util import list_dimensions_num, create_list
 
 import pygame
 
@@ -13,7 +14,15 @@ BLOCK_DIRT = 2
 BLOCK_STONE = 3
 
 asset_path = {
-    'grass' : "grass.png"
+    'grass' : "grass.png",
+    'dirt' : "dirt.png",
+    'stone' : "stone.png",
+}
+
+block_resistance = {
+    BLOCK_GRASS: 1,
+    BLOCK_DIRT: 1,
+    BLOCK_STONE: 4
 }
 
 # 64 x 32
@@ -29,6 +38,10 @@ board = [
     [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
     [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
     [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+    [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
+    [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
+    [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
+    [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
     [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
@@ -46,11 +59,9 @@ board = [
     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
 ]
+
+board_breakage = create_list((len(board), len(board[0])), 0)
 
 BOARD_WIDTH = len(board[0])
 BOARD_HEIGHT = len(board)
@@ -74,8 +85,8 @@ def load_image(path: str):
 
 images = {
     1: load_image(asset_path['grass']),
-    2: load_image(asset_path['grass']),
-    3: load_image(asset_path['grass']),
+    2: load_image(asset_path['dirt']),
+    3: load_image(asset_path['stone']),
 }
 
 # def render_grass(surface: pygame.Surface, position: tuple):
@@ -107,14 +118,45 @@ def render(surface: pygame.Surface):
             render_block(surface, (pox_x, pox_y), block_id, color)
 
 
+def is_right_button_pressed() -> bool:
+    return pygame.mouse.get_pressed()[pygame.BUTTON_RIGHT-1]
+
+
+def is_left_button_pressed() -> bool:
+    return pygame.mouse.get_pressed()[pygame.BUTTON_LEFT-1]
+
+
+def get_block_resistance(block_id: int) -> int:
+    return block_resistance[block_id]
+
+
+def block_destroy(coordinates: Tuple[int, int]) -> None:
+    x = coordinates[0]
+    y = coordinates[1]
+    board[y][x] = BLOCK_NONE
+    board_breakage[y][x] = 0
+
+
+def block_tap(coordinates: Tuple[int, int]) -> None:
+    x = coordinates[0]
+    y = coordinates[1]
+    block_id = board[y][x]
+
+    if board_breakage[y][x] >= get_block_resistance(block_id):
+        block_destroy(coordinates)
+        return
+
+    board_breakage[y][x] += 1
+
+
 def on_block_clicked(coordinates: Tuple[int, int]) -> None:
     x = coordinates[0]
     y = coordinates[1]
     block: int = board[y][x]
-    if block != BLOCK_NONE:
-        board[y][x] = BLOCK_NONE
-    else:
-        board[y][x] = BLOCK_GRASS
+    if is_right_button_pressed() and block != BLOCK_NONE:
+        block_tap(coordinates)
+    if is_left_button_pressed() and block == BLOCK_NONE:
+        board[y][x] = BLOCK_DIRT
 
 
 screen = pygame.display.set_mode([800, 600])
