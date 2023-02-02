@@ -7,6 +7,11 @@ import pygame
 BLOCK_SIZE = 32
 POINTED_BLOCK_COLOR = (100, 0, 0)
 
+BLOCK_NONE = 0
+BLOCK_GRASS = 1
+BLOCK_DIRT = 2
+BLOCK_STONE = 3
+
 asset_path = {
     'grass' : "grass.png"
 }
@@ -102,6 +107,16 @@ def render(surface: pygame.Surface):
             render_block(surface, (pox_x, pox_y), block_id, color)
 
 
+def on_block_clicked(coordinates: Tuple[int, int]) -> None:
+    x = coordinates[0]
+    y = coordinates[1]
+    block: int = board[y][x]
+    if block != BLOCK_NONE:
+        board[y][x] = BLOCK_NONE
+    else:
+        board[y][x] = BLOCK_GRASS
+
+
 screen = pygame.display.set_mode([800, 600])
 
 running = True
@@ -113,9 +128,7 @@ while running:
         if event.type == pygame.MOUSEBUTTONDOWN:
             cursor_pos = pygame.mouse.get_pos()
             coordinates = get_board_element_pointed_by(cursor_pos, BLOCK_SIZE)
-            x = coordinates[0]
-            y = coordinates[1]
-            board[y][x] = 0
+            on_block_clicked(coordinates)
 
     screen.fill((255, 255, 255))
 
