@@ -23,3 +23,17 @@ def create_list(size: tuple, value = None) -> List:
         list.append(value)
 
     return list
+
+
+def keep_in_range(value, minimum, maximum):
+    value = min(value, maximum)
+    value = max(value, minimum)
+    return value
+
+
+def keep_in_range_tuple(values: tuple, minimum: tuple, maximum: tuple) -> tuple:
+    output_values = []
+    for i in range(len(values)):
+        output_values.append(keep_in_range(values[i], minimum[i], maximum[i]))
+
+    return tuple(output_values)

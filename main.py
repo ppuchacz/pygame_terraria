@@ -1,9 +1,11 @@
 import math
 from typing import Tuple
 from collisions import get_board_element_pointed_by
-from util import create_list
+from gui import items_frame
+from util import create_list, keep_in_range_tuple
 
 import pygame
+
 
 
 BLOCK_SIZE = 32
@@ -16,9 +18,9 @@ BLOCK_STONE = 3
 
 ASSET_BREAK_1 = 101
 ASSET_BREAK_2 = 102
+ASSET_BREAK_2 = 103
 
 BREAKAGE_OPAQUE = 0.5
-DAMAGE_LEVELS = 2
 
 asset_path = {
     'grass' : "grass.png",
@@ -26,12 +28,13 @@ asset_path = {
     'stone' : "stone.png",
     'break-1' : "break-1.png",
     'break-2' : "break-2.png",
+    'break-3' : "break-3.png",
 }
 
 block_resistance = {
     BLOCK_GRASS: 1,
     BLOCK_DIRT: 1,
-    BLOCK_STONE: 4
+    BLOCK_STONE: 8
 }
 
 # 64 x 32
@@ -42,8 +45,8 @@ board = [
     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2],
     [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
     [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
     [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
@@ -75,6 +78,10 @@ board_breakage = create_list((len(board), len(board[0])), 0)
 BOARD_WIDTH = len(board[0])
 BOARD_HEIGHT = len(board)
 
+WINDOW_WIDTH = BOARD_WIDTH * BLOCK_SIZE
+WINDOW_HEIGHT = BOARD_HEIGHT * BLOCK_SIZE
+WINDOW_SIZE = (WINDOW_WIDTH, WINDOW_HEIGHT)
+
 cache = {}
 
 def get(key: str):
@@ -85,8 +92,6 @@ def set(key: str, value) -> None:
 
 def get_coloured_image(image: pygame.Surface, color: Tuple[int, int, int]) -> pygame.Surface:
     return image.copy().fill(color, special_flags=pygame.BLEND_RGB_ADD)
-
-pygame.init()
 
 def load_image(path: str, opaque: float = 1.0):
     image: pygame.Surface = pygame.image.load(path)
@@ -100,13 +105,19 @@ images = {
     3: load_image(asset_path['stone']),
     101: load_image(asset_path['break-1'], BREAKAGE_OPAQUE),
     102: load_image(asset_path['break-2'], BREAKAGE_OPAQUE),
+    103: load_image(asset_path['break-3'], BREAKAGE_OPAQUE),
 }
 
-BREAKAGE_IMAGE_IDS = {
+DAMAGE_LEVEL_IMAGES = {
     1: 101,
-    2: 102
+    2: 102,
+    3: 103,
 }
 
+DAMAGE_LEVELS = len(DAMAGE_LEVEL_IMAGES)
+
+EQ_ITEMS = [1, 2, 3]
+EQ_ITEMS_COUNT = len(EQ_ITEMS)
 
 def render_block(surface: pygame.Surface, position: tuple, block_id: int):
     if block_id == 0:
@@ -128,7 +139,7 @@ def render_block(surface: pygame.Surface, position: tuple, block_id: int):
     damage_level = math.ceil((breakage / resistance * DAMAGE_LEVELS))
 
     if damage_level > 0:
-        surface.blit(images[BREAKAGE_IMAGE_IDS[damage_level]], render_position)
+        surface.blit(images[DAMAGE_LEVEL_IMAGES[damage_level]], render_position)
 
 
 def render(surface: pygame.Surface):
@@ -174,27 +185,44 @@ def on_block_clicked(coordinates: Tuple[int, int]) -> None:
     block: int = board[y][x]
     if is_right_button_pressed() and block != BLOCK_NONE:
         block_tap(coordinates)
+
+
+def on_block_mouse_on(coordinates: Tuple[int, int]) -> None:
+    x = coordinates[0]
+    y = coordinates[1]
+    block: int = board[y][x]
     if is_left_button_pressed() and block == BLOCK_NONE:
-        board[y][x] = BLOCK_DIRT
+        board[y][x] = EQ_ITEMS[ui_selected_item]
 
 
-screen = pygame.display.set_mode([800, 600])
+pygame.init()
+
+screen = pygame.display.set_mode([WINDOW_WIDTH, WINDOW_HEIGHT])
+ui_selected_item = 0
 
 running = True
 while running:
+
+    cursor_pos = pygame.mouse.get_pos()
+    mouse_on_block_coordinates = get_board_element_pointed_by(cursor_pos, BLOCK_SIZE)
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
         if event.type == pygame.MOUSEBUTTONDOWN:
-            cursor_pos = pygame.mouse.get_pos()
-            coordinates = get_board_element_pointed_by(cursor_pos, BLOCK_SIZE)
-            on_block_clicked(coordinates)
+            on_block_clicked(mouse_on_block_coordinates)
+        if event.type == pygame.MOUSEWHEEL:
+            ui_selected_item -= event.y
+            ui_selected_item = max(0, ui_selected_item)
+            ui_selected_item = min(EQ_ITEMS_COUNT-1, ui_selected_item)
+
+    on_block_mouse_on(mouse_on_block_coordinates)
 
     screen.fill((255, 255, 255))
 
     # pygame.draw.circle(screen, (0, 0, 255), (250, 250), 75)
     render(screen)
+    items_frame(EQ_ITEMS, screen, ui_selected_item)
 
     pygame.display.flip()
 
