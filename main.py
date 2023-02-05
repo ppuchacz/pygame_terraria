@@ -1,22 +1,31 @@
+import math
 from typing import Tuple
 from collisions import get_board_element_pointed_by
-from util import list_dimensions_num, create_list
+from util import create_list
 
 import pygame
 
 
 BLOCK_SIZE = 32
-POINTED_BLOCK_COLOR = (100, 0, 0)
+POINTED_BLOCK_COLOR = (100, 100, 100)
 
 BLOCK_NONE = 0
 BLOCK_GRASS = 1
 BLOCK_DIRT = 2
 BLOCK_STONE = 3
 
+ASSET_BREAK_1 = 101
+ASSET_BREAK_2 = 102
+
+BREAKAGE_OPAQUE = 0.5
+DAMAGE_LEVELS = 2
+
 asset_path = {
     'grass' : "grass.png",
     'dirt' : "dirt.png",
     'stone' : "stone.png",
+    'break-1' : "break-1.png",
+    'break-2' : "break-2.png",
 }
 
 block_resistance = {
@@ -79,43 +88,53 @@ def get_coloured_image(image: pygame.Surface, color: Tuple[int, int, int]) -> py
 
 pygame.init()
 
-def load_image(path: str):
-    image = pygame.image.load(path)
+def load_image(path: str, opaque: float = 1.0):
+    image: pygame.Surface = pygame.image.load(path)
+    if opaque < 1.0:
+        image.fill((255, 255, 255, opaque * 255), special_flags=pygame.BLEND_RGBA_MULT)
     return pygame.transform.scale(image, (BLOCK_SIZE, BLOCK_SIZE))
 
 images = {
     1: load_image(asset_path['grass']),
     2: load_image(asset_path['dirt']),
     3: load_image(asset_path['stone']),
+    101: load_image(asset_path['break-1'], BREAKAGE_OPAQUE),
+    102: load_image(asset_path['break-2'], BREAKAGE_OPAQUE),
 }
 
-# def render_grass(surface: pygame.Surface, position: tuple):
-    # surface.blit(images['grass'], position)
+BREAKAGE_IMAGE_IDS = {
+    1: 101,
+    2: 102
+}
 
-def render_block(surface: pygame.Surface, position: tuple, block_id: int, color: Tuple[int, int, int] = None):
-    surface.blit(images[block_id], position)
-    # if color is None:
-    #     surface.blit(images[block_id], position)
-    #     return
+
+def render_block(surface: pygame.Surface, position: tuple, block_id: int):
+    if block_id == 0:
+        return
     
-    # surface.blit(get_coloured_image(images[block_id], color), position)
+    x = position[0]
+    y = position[1]
+
+    px_pos_x = BLOCK_SIZE * x
+    px_pos_y = BLOCK_SIZE * y
+
+    render_position = (px_pos_x, px_pos_y)
+    surface.blit(images[block_id], render_position)
     
+    # render breakage
+    breakage = board_breakage[y][x]
+    resistance = block_resistance[block_id]
+    
+    damage_level = math.ceil((breakage / resistance * DAMAGE_LEVELS))
+
+    if damage_level > 0:
+        surface.blit(images[BREAKAGE_IMAGE_IDS[damage_level]], render_position)
+
 
 def render(surface: pygame.Surface):
-    cursor_pos = pygame.mouse.get_pos()
-    pointed_block = get_board_element_pointed_by(cursor_pos, BLOCK_SIZE)
     for y, row in enumerate(board):
         for x, block_id in enumerate(row):
-            color = None
-            if block_id == 0:
-                continue
-            pox_x = BLOCK_SIZE * x
-            pox_y = BLOCK_SIZE * y
-
-            if pointed_block == (x, y):
-                color = POINTED_BLOCK_COLOR
-
-            render_block(surface, (pox_x, pox_y), block_id, color)
+            render_block(surface, (x, y), block_id)
 
 
 def is_right_button_pressed() -> bool:
