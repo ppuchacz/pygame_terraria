@@ -3,6 +3,7 @@ from typing import Tuple
 from collisions import get_board_element_pointed_by
 from gui import items_frame
 from util import create_list, keep_in_range_tuple
+from character import Character
 
 import pygame
 
@@ -29,6 +30,7 @@ asset_path = {
     'break-1' : "break-1.png",
     'break-2' : "break-2.png",
     'break-3' : "break-3.png",
+    'character' : "character.png",
 }
 
 block_resistance = {
@@ -78,8 +80,8 @@ board_breakage = create_list((len(board), len(board[0])), 0)
 BOARD_WIDTH = len(board[0])
 BOARD_HEIGHT = len(board)
 
-WINDOW_WIDTH = BOARD_WIDTH * BLOCK_SIZE
-WINDOW_HEIGHT = BOARD_HEIGHT * BLOCK_SIZE
+WINDOW_WIDTH = 1200 # BOARD_WIDTH * BLOCK_SIZE
+WINDOW_HEIGHT = 900 # BOARD_HEIGHT * BLOCK_SIZE
 WINDOW_SIZE = (WINDOW_WIDTH, WINDOW_HEIGHT)
 
 cache = {}
@@ -106,6 +108,7 @@ images = {
     101: load_image(asset_path['break-1'], BREAKAGE_OPAQUE),
     102: load_image(asset_path['break-2'], BREAKAGE_OPAQUE),
     103: load_image(asset_path['break-3'], BREAKAGE_OPAQUE),
+    201: load_image(asset_path['character']),
 }
 
 DAMAGE_LEVEL_IMAGES = {
@@ -199,6 +202,7 @@ pygame.init()
 
 screen = pygame.display.set_mode([WINDOW_WIDTH, WINDOW_HEIGHT])
 ui_selected_item = 0
+character = Character((0.0, 0.0))
 
 running = True
 while running:
@@ -223,6 +227,7 @@ while running:
     # pygame.draw.circle(screen, (0, 0, 255), (250, 250), 75)
     render(screen)
     items_frame(EQ_ITEMS, screen, ui_selected_item)
+    character.render(screen)
 
     pygame.display.flip()
 
